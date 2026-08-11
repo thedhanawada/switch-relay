@@ -20,7 +20,7 @@ const ledger = createLedger({ directory: option('--state-dir') });
 const execFileAsync = promisify(execFile);
 
 function usage() {
-  console.log(`AgentRelay\n\nCommands:\n  serve [--repo <path>] [--port 4180] [--opencode-port 4096] [--state-dir <path>]\n  check [--opencode-port 4096]\n  run --title <title> --prompt <brief> --role <researcher|builder|reviewer|qa> --model <provider/model> [--repo <path>] [--state-dir <path>]\n  record --title <title> --role <researcher|builder|reviewer|qa> --model <provider/model> [--status needs-review] [--cost 0.01] [--repo <path>] [--state-dir <path>]`);
+  console.log(`SwitchRelay\n\nCommands:\n  serve [--repo <path>] [--port 4180] [--opencode-port 4096] [--state-dir <path>]\n  check [--opencode-port 4096]\n  run --title <title> --prompt <brief> --role <researcher|builder|reviewer|qa> --model <provider/model> [--repo <path>] [--state-dir <path>]\n  record --title <title> --role <researcher|builder|reviewer|qa> --model <provider/model> [--status needs-review] [--cost 0.01] [--repo <path>] [--state-dir <path>]`);
 }
 
 const openCodeExecutable = () =>
@@ -114,7 +114,7 @@ async function runWorker() {
   const costUsd = sessionId ? await sessionCost(sessionId) : undefined;
   const persisted = await ledger.mutateState((state) => {
     const persisted = state.runs.find((candidate) => candidate.id === run.id);
-    if (!persisted) throw new Error(`AgentRelay lost run ${run.id}`);
+    if (!persisted) throw new Error(`SwitchRelay lost run ${run.id}`);
     persisted.sessionId = sessionId;
     persisted.costUsd = costUsd;
     persisted.status = exitCode === 0 ? 'needs-review' : 'failed';
@@ -146,7 +146,7 @@ async function serve() {
     response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
     response.end(dashboard(fresh, health, openCodeUrl));
   });
-  server.listen(port, '127.0.0.1', () => console.log(`AgentRelay ready at http://127.0.0.1:${port}`));
+  server.listen(port, '127.0.0.1', () => console.log(`SwitchRelay ready at http://127.0.0.1:${port}`));
 }
 
 async function record() {

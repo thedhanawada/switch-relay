@@ -15,7 +15,7 @@ export interface WorkerRun {
   notes?: string;
 }
 
-export interface AgentRelayState {
+export interface SwitchRelayState {
   repository?: string;
   runs: WorkerRun[];
 }

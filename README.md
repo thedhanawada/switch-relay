@@ -1,6 +1,6 @@
-# AgentRelay
+# SwitchRelay
 
-Delegate coding work to different AI models through OpenCode. AgentRelay keeps each run, session, cost and review status in a local ledger.
+Switch coding work across AI models through OpenCode. SwitchRelay keeps each run, session, cost and review status in a local ledger.
 
 ## Requirements
 
@@ -10,14 +10,14 @@ Delegate coding work to different AI models through OpenCode. AgentRelay keeps e
 ## Install
 
 ```bash
-npm install --global @ndhanawada/agentrelay
-agentrelay check
+npm install --global switch-relay
+switchrelay check
 ```
 
 ## Delegate a task
 
 ```bash
-agentrelay run \
+switchrelay run \
   --repo /path/to/repository \
   --title "Review the CLI" \
   --role researcher \
@@ -25,18 +25,18 @@ agentrelay run \
   --prompt "Inspect the CLI and suggest one evidence-based improvement. Do not edit files."
 ```
 
-Use the `builder` role when the worker should edit the repository. AgentRelay records completed workers as `needs-review`; it never merges, pushes or deploys their work.
+Use the `builder` role when the worker should edit the repository. SwitchRelay records completed workers as `needs-review`; it never merges, pushes or deploys their work.
 
 ## Commands
 
 ```text
-agentrelay check
-agentrelay run --title <title> --prompt <brief> --role <role> --model <provider/model>
-agentrelay record --title <title> --role <role> --model <provider/model>
-agentrelay serve --repo /path/to/repository
+switchrelay check
+switchrelay run --title <title> --prompt <brief> --role <role> --model <provider/model>
+switchrelay record --title <title> --role <role> --model <provider/model>
+switchrelay serve --repo /path/to/repository
 ```
 
-AgentRelay runs locally and uses your existing OpenCode provider configuration.
+SwitchRelay runs locally and uses your existing OpenCode provider configuration.
 
 ## Licence
 

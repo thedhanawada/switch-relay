@@ -1,15 +1,15 @@
 {
-  "name": "@ndhanawada/agentrelay",
+  "name": "switch-relay",
   "version": "0.1.0",
   "description": "Delegate coding work across models while keeping each run visible and reviewable.",
   "type": "module",
   "license": "MIT",
   "author": "Nirmala Rao Dhanawada",
-  "homepage": "https://github.com/thedhanawada/agentrelay#readme",
-  "bugs": "https://github.com/thedhanawada/agentrelay/issues",
+  "homepage": "https://github.com/thedhanawada/switch-relay#readme",
+  "bugs": "https://github.com/thedhanawada/switch-relay/issues",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/thedhanawada/agentrelay.git"
+    "url": "git+https://github.com/thedhanawada/switch-relay.git"
   },
   "keywords": [
     "ai-agents",
@@ -22,7 +22,7 @@
     "node": ">=22"
   },
   "bin": {
-    "agentrelay": "dist/cli.js"
+    "switchrelay": "dist/cli.js"
   },
   "files": [
     "dist",
@@ -34,7 +34,7 @@
     "dev": "node --experimental-strip-types src/cli.ts serve",
     "start": "node --experimental-strip-types src/cli.ts serve",
     "check": "node --experimental-strip-types src/cli.ts check",
-    "agentrelay": "node --experimental-strip-types src/cli.ts",
+    "switchrelay": "node --experimental-strip-types src/cli.ts",
     "test": "node --experimental-strip-types --test test/*.test.ts",
     "prepublishOnly": "npm run build && npm test"
   },

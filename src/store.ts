@@ -2,7 +2,7 @@ import { open, mkdir, readFile, rename, stat, unlink } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { randomBytes } from 'node:crypto';
 import path from 'node:path';
-import type { AgentRelayState, WorkerRun } from './types.ts';
+import type { SwitchRelayState, WorkerRun } from './types.ts';
 
 export interface LedgerOptions {
   directory?: string;
@@ -12,8 +12,8 @@ export interface LedgerOptions {
 
 export interface StateLedger {
   readonly stateFile: string;
-  read(): Promise<AgentRelayState>;
-  mutateState<T>(mutator: (state: AgentRelayState) => T | Promise<T>): Promise<T>;
+  read(): Promise<SwitchRelayState>;
+  mutateState<T>(mutator: (state: SwitchRelayState) => T | Promise<T>): Promise<T>;
 }
 
 const RUN_STATUSES = ['queued', 'running', 'needs-review', 'completed', 'failed'] as const;
@@ -30,13 +30,19 @@ const describe = (value: unknown): string =>
 
 export function createLedger(options: LedgerOptions = {}): StateLedger {
   const homeDirectory = process.env.HOME ?? '.';
+  const switchRelayDirectory = path.join(homeDirectory, '.switchrelay');
   const agentRelayDirectory = path.join(homeDirectory, '.agentrelay');
   const legacyDirectory = path.join(homeDirectory, '.switchboard');
-  const defaultDirectory = existsSync(agentRelayDirectory) || !existsSync(legacyDirectory)
-    ? agentRelayDirectory
-    : legacyDirectory;
+  const defaultDirectory = existsSync(switchRelayDirectory)
+    ? switchRelayDirectory
+    : existsSync(agentRelayDirectory)
+      ? agentRelayDirectory
+      : existsSync(legacyDirectory)
+        ? legacyDirectory
+        : switchRelayDirectory;
   const directory = path.resolve(
     options.directory ??
+    process.env.SWITCHRELAY_STATE_DIR ??
     process.env.AGENTRELAY_STATE_DIR ??
     process.env.SWITCHBOARD_STATE_DIR ??
     defaultDirectory,
@@ -90,7 +96,7 @@ export function createLedger(options: LedgerOptions = {}): StateLedger {
     };
   }
 
-  function validateState(value: unknown): AgentRelayState {
+  function validateState(value: unknown): SwitchRelayState {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
       throw new Error('state root must be an object, got ' + describe(value));
     }
@@ -104,13 +110,13 @@ export function createLedger(options: LedgerOptions = {}): StateLedger {
     return candidate.repository === undefined ? { runs } : { repository: candidate.repository, runs };
   }
 
-  async function parseState(raw: string): Promise<AgentRelayState> {
+  async function parseState(raw: string): Promise<SwitchRelayState> {
     let parsed: unknown;
     try {
       parsed = JSON.parse(raw);
     } catch (error) {
       throw new Error(
-        `AgentRelay state at ${stateFile} is not valid JSON (${(error as Error).message}). ` +
+        `SwitchRelay state at ${stateFile} is not valid JSON (${(error as Error).message}). ` +
         'The file was left untouched to avoid destroying evidence; repair or remove it manually and retry.',
       );
     }
@@ -118,13 +124,13 @@ export function createLedger(options: LedgerOptions = {}): StateLedger {
       return validateState(parsed);
     } catch (error) {
       throw new Error(
-        `AgentRelay state at ${stateFile} is invalid (${(error as Error).message}). ` +
+        `SwitchRelay state at ${stateFile} is invalid (${(error as Error).message}). ` +
         'The file was left untouched to avoid destroying evidence; repair or remove it manually and retry.',
       );
     }
   }
 
-  async function read(): Promise<AgentRelayState> {
+  async function read(): Promise<SwitchRelayState> {
     let raw: string;
     try {
       raw = await readFile(stateFile, 'utf8');
@@ -180,7 +186,7 @@ export function createLedger(options: LedgerOptions = {}): StateLedger {
         if (Date.now() >= deadline) {
           throw new Error(
             `Timed out after ${lockWaitMs}ms waiting for the exclusive state lock at ${lockFile} ` +
-            `(held for ${Math.round(age)}ms; stale after ${lockStaleMs}ms). Another AgentRelay process may be writing state. ` +
+            `(held for ${Math.round(age)}ms; stale after ${lockStaleMs}ms). Another SwitchRelay process may be writing state. ` +
             `If none is running, delete ${lockFile} and retry.`,
           );
         }
@@ -219,7 +225,7 @@ export function createLedger(options: LedgerOptions = {}): StateLedger {
     }
   }
 
-  async function write(state: AgentRelayState): Promise<void> {
+  async function write(state: SwitchRelayState): Promise<void> {
     await mkdir(directory, { recursive: true });
     const validatedState = validateState(state);
     const tempFile = path.join(directory, `.state.json.${process.pid}.${randomBytes(8).toString('hex')}.tmp`);
@@ -239,7 +245,7 @@ export function createLedger(options: LedgerOptions = {}): StateLedger {
     }
   }
 
-  async function mutateState<T>(mutator: (state: AgentRelayState) => T | Promise<T>): Promise<T> {
+  async function mutateState<T>(mutator: (state: SwitchRelayState) => T | Promise<T>): Promise<T> {
     const lockToken = await acquireLock();
     try {
       const state = await read();
