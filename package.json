@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "node --experimental-strip-types src/cli.ts serve",
     "start": "node --experimental-strip-types src/cli.ts serve",
-    "check": "node --experimental-strip-types src/cli.ts check"
+    "check": "node --experimental-strip-types src/cli.ts check",
+    "switchboard": "node --experimental-strip-types src/cli.ts"
   }
 }

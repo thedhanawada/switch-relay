@@ -1,6 +1,7 @@
-import { spawn } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { createServer } from 'node:http';
 import path from 'node:path';
+import { promisify } from 'node:util';
 import { dashboard } from './dashboard.ts';
 import { openCodeHealth } from './opencode.ts';
 import { readState, saveState } from './store.ts';
@@ -15,16 +16,19 @@ const option = (name: string) => {
 const port = Number(option('--port') ?? 4180);
 const openCodePort = Number(option('--opencode-port') ?? 4096);
 const openCodeUrl = `http://127.0.0.1:${openCodePort}`;
+const execFileAsync = promisify(execFile);
 
 function usage() {
-  console.log(`Switchboard\n\nCommands:\n  serve [--repo <path>] [--port 4180] [--opencode-port 4096]\n  check [--opencode-port 4096]\n  record --title <title> --role <researcher|builder|reviewer|qa> --model <provider/model> [--status needs-review] [--cost 0.01] [--repo <path>]`);
+  console.log(`Switchboard\n\nCommands:\n  serve [--repo <path>] [--port 4180] [--opencode-port 4096]\n  check [--opencode-port 4096]\n  run --title <title> --prompt <brief> --role <researcher|builder|reviewer|qa> --model <provider/model> [--repo <path>]\n  record --title <title> --role <researcher|builder|reviewer|qa> --model <provider/model> [--status needs-review] [--cost 0.01] [--repo <path>]`);
 }
+
+const openCodeExecutable = () =>
+  process.env.OPENCODE_BIN ?? path.join(process.env.HOME ?? '', '.opencode/bin/opencode');
 
 async function startOpenCode() {
   const health = await openCodeHealth(openCodeUrl);
   if (health.connected) return health;
-  const executable = process.env.OPENCODE_BIN ?? path.join(process.env.HOME ?? '', '.opencode/bin/opencode');
-  const child = spawn(executable, ['serve', '--hostname', '127.0.0.1', '--port', String(openCodePort)], {
+  const child = spawn(openCodeExecutable(), ['serve', '--hostname', '127.0.0.1', '--port', String(openCodePort)], {
     detached: true,
     stdio: 'ignore',
   });
@@ -35,6 +39,89 @@ async function startOpenCode() {
     if (next.connected) return next;
   }
   return openCodeHealth(openCodeUrl);
+}
+
+function findSessionId(value: unknown): string | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  for (const [key, child] of Object.entries(value)) {
+    if ((key === 'sessionID' || key === 'sessionId') && typeof child === 'string') return child;
+    const nested = findSessionId(child);
+    if (nested) return nested;
+  }
+}
+
+async function sessionCost(sessionId: string): Promise<number | undefined> {
+  try {
+    const { stdout } = await execFileAsync(openCodeExecutable(), ['export', sessionId], {
+      maxBuffer: 20 * 1024 * 1024,
+    });
+    const exported = JSON.parse(stdout) as { messages?: Array<{ info?: { cost?: number } }> };
+    return exported.messages?.reduce((total, message) => total + (message.info?.cost ?? 0), 0);
+  } catch {
+    return undefined;
+  }
+}
+
+async function runWorker() {
+  const title = option('--title');
+  const prompt = option('--prompt');
+  const role = option('--role') as WorkerRun['role'] | undefined;
+  const model = option('--model');
+  const repository = path.resolve(option('--repo') ?? (await readState()).repository ?? process.cwd());
+  if (!title || !prompt || !role || !model || !['researcher', 'builder', 'reviewer', 'qa'].includes(role)) {
+    usage(); process.exitCode = 1; return;
+  }
+
+  const health = await startOpenCode();
+  if (!health.connected) throw new Error(health.detail ?? 'OpenCode is unavailable');
+  const state = await readState();
+  const now = new Date().toISOString();
+  const run: WorkerRun = {
+    id: `run_${crypto.randomUUID().slice(0, 8)}`,
+    title, role, model, repository, status: 'running', createdAt: now, updatedAt: now,
+  };
+  state.runs.unshift(run);
+  await saveState(state);
+  console.log(`[${run.id}] ${role} started with ${model}`);
+
+  // OpenCode only accepts primary agents at the top level. `explore` is a
+  // subagent, while `plan` provides the read-only primary role we need here.
+  const agent = role === 'researcher' || role === 'reviewer' ? 'plan' : 'build';
+  const child = spawn(
+    openCodeExecutable(),
+    ['run', '--attach', openCodeUrl, '--dir', repository, '--model', model, '--agent', agent, '--format', 'json', prompt],
+    { stdio: ['ignore', 'pipe', 'pipe'] },
+  );
+  let transcript = '';
+  let sessionId: string | undefined;
+  child.stdout.setEncoding('utf8');
+  child.stderr.setEncoding('utf8');
+  child.stdout.on('data', (chunk: string) => {
+    transcript += chunk;
+    for (const line of chunk.split('\n')) {
+      try { sessionId ??= findSessionId(JSON.parse(line)); } catch { /* partial or human output */ }
+    }
+    process.stdout.write(chunk);
+  });
+  child.stderr.on('data', (chunk: string) => process.stderr.write(chunk));
+  const exitCode = await new Promise<number>((resolve, reject) => {
+    child.once('error', reject);
+    child.once('close', (code) => resolve(code ?? 1));
+  });
+
+  const fresh = await readState();
+  const persisted = fresh.runs.find((candidate) => candidate.id === run.id);
+  if (!persisted) throw new Error(`Switchboard lost run ${run.id}`);
+  persisted.sessionId = sessionId;
+  persisted.costUsd = sessionId ? await sessionCost(sessionId) : undefined;
+  persisted.status = exitCode === 0 ? 'needs-review' : 'failed';
+  persisted.updatedAt = new Date().toISOString();
+  persisted.notes = exitCode === 0
+    ? 'Worker completed. Result requires lead-agent review.'
+    : `OpenCode exited with code ${exitCode}. Last output: ${transcript.slice(-500)}`;
+  await saveState(fresh);
+  console.log(`\n[${run.id}] ${persisted.status}; session ${sessionId ?? 'not reported'}; cost ${persisted.costUsd == null ? 'unavailable' : `$${persisted.costUsd.toFixed(6)}`}`);
+  if (exitCode !== 0) process.exitCode = exitCode;
 }
 
 async function serve() {
@@ -81,5 +168,6 @@ async function record() {
 
 if (command === 'serve') await serve();
 else if (command === 'check') console.log(JSON.stringify(await openCodeHealth(openCodeUrl), null, 2));
+else if (command === 'run') await runWorker();
 else if (command === 'record') await record();
 else usage();

@@ -10,6 +10,17 @@ npm start -- --repo /home/apostle/.iea-r/servicecite
 
 Then open `http://127.0.0.1:4180`.
 
+Terminal-first delegation:
+
+```bash
+npm run switchboard -- run \
+  --repo /path/to/repository \
+  --title "Review the CLI" \
+  --role researcher \
+  --model openrouter/deepseek/deepseek-v4-flash-0731 \
+  --prompt "Inspect the CLI and return one evidence-based improvement. Do not edit files."
+```
+
 Switchboard starts only on localhost. It does not hold provider credentials; OpenCode keeps using its existing provider configuration. A future worker run receives its own Git worktree before it is allowed to edit code.
 
 ## Deliberate v0.1 boundary
