@@ -28,8 +28,12 @@ Switchboard starts only on localhost. It does not hold provider credentials; Ope
 This first slice is the control-plane foundation, not autonomous deployment software:
 
 - persistent OpenCode health check and session visibility
-- local run ledger for cost, status, review and test evidence
+- crash-safe local run ledger for cost, status, review and test evidence
 - localhost dashboard and JSON API
 - explicit review/merge state, with no automatic merge, push or deploy
+
+The ledger uses atomic file replacement and an exclusive writer lock, so parallel
+terminal workers cannot silently overwrite one another. For isolated testing, pass
+`--state-dir <path>` to `serve`, `run`, or `record`.
 
 The next slice adds queued worktree-backed runs through OpenCode's HTTP API.

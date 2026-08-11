@@ -4,7 +4,7 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import { dashboard } from './dashboard.ts';
 import { openCodeHealth } from './opencode.ts';
-import { readState, saveState } from './store.ts';
+import { createLedger } from './store.ts';
 import type { WorkerRun } from './types.ts';
 
 const args = process.argv.slice(2);
@@ -16,10 +16,11 @@ const option = (name: string) => {
 const port = Number(option('--port') ?? 4180);
 const openCodePort = Number(option('--opencode-port') ?? 4096);
 const openCodeUrl = `http://127.0.0.1:${openCodePort}`;
+const ledger = createLedger({ directory: option('--state-dir') });
 const execFileAsync = promisify(execFile);
 
 function usage() {
-  console.log(`Switchboard\n\nCommands:\n  serve [--repo <path>] [--port 4180] [--opencode-port 4096]\n  check [--opencode-port 4096]\n  run --title <title> --prompt <brief> --role <researcher|builder|reviewer|qa> --model <provider/model> [--repo <path>]\n  record --title <title> --role <researcher|builder|reviewer|qa> --model <provider/model> [--status needs-review] [--cost 0.01] [--repo <path>]`);
+  console.log(`Switchboard\n\nCommands:\n  serve [--repo <path>] [--port 4180] [--opencode-port 4096] [--state-dir <path>]\n  check [--opencode-port 4096]\n  run --title <title> --prompt <brief> --role <researcher|builder|reviewer|qa> --model <provider/model> [--repo <path>] [--state-dir <path>]\n  record --title <title> --role <researcher|builder|reviewer|qa> --model <provider/model> [--status needs-review] [--cost 0.01] [--repo <path>] [--state-dir <path>]`);
 }
 
 const openCodeExecutable = () =>
@@ -67,21 +68,22 @@ async function runWorker() {
   const prompt = option('--prompt');
   const role = option('--role') as WorkerRun['role'] | undefined;
   const model = option('--model');
-  const repository = path.resolve(option('--repo') ?? (await readState()).repository ?? process.cwd());
   if (!title || !prompt || !role || !model || !['researcher', 'builder', 'reviewer', 'qa'].includes(role)) {
     usage(); process.exitCode = 1; return;
   }
 
   const health = await startOpenCode();
   if (!health.connected) throw new Error(health.detail ?? 'OpenCode is unavailable');
-  const state = await readState();
   const now = new Date().toISOString();
-  const run: WorkerRun = {
-    id: `run_${crypto.randomUUID().slice(0, 8)}`,
-    title, role, model, repository, status: 'running', createdAt: now, updatedAt: now,
-  };
-  state.runs.unshift(run);
-  await saveState(state);
+  const { run, repository } = await ledger.mutateState((state) => {
+    const repository = path.resolve(option('--repo') ?? state.repository ?? process.cwd());
+    const run: WorkerRun = {
+      id: `run_${crypto.randomUUID().slice(0, 8)}`,
+      title, role, model, repository, status: 'running', createdAt: now, updatedAt: now,
+    };
+    state.runs.unshift(run);
+    return { run, repository };
+  });
   console.log(`[${run.id}] ${role} started with ${model}`);
 
   // OpenCode only accepts primary agents at the top level. `explore` is a
@@ -109,31 +111,32 @@ async function runWorker() {
     child.once('close', (code) => resolve(code ?? 1));
   });
 
-  const fresh = await readState();
-  const persisted = fresh.runs.find((candidate) => candidate.id === run.id);
-  if (!persisted) throw new Error(`Switchboard lost run ${run.id}`);
-  persisted.sessionId = sessionId;
-  persisted.costUsd = sessionId ? await sessionCost(sessionId) : undefined;
-  persisted.status = exitCode === 0 ? 'needs-review' : 'failed';
-  persisted.updatedAt = new Date().toISOString();
-  persisted.notes = exitCode === 0
-    ? 'Worker completed. Result requires lead-agent review.'
-    : `OpenCode exited with code ${exitCode}. Last output: ${transcript.slice(-500)}`;
-  await saveState(fresh);
-  console.log(`\n[${run.id}] ${persisted.status}; session ${sessionId ?? 'not reported'}; cost ${persisted.costUsd == null ? 'unavailable' : `$${persisted.costUsd.toFixed(6)}`}`);
+  const costUsd = sessionId ? await sessionCost(sessionId) : undefined;
+  const persisted = await ledger.mutateState((state) => {
+    const persisted = state.runs.find((candidate) => candidate.id === run.id);
+    if (!persisted) throw new Error(`Switchboard lost run ${run.id}`);
+    persisted.sessionId = sessionId;
+    persisted.costUsd = costUsd;
+    persisted.status = exitCode === 0 ? 'needs-review' : 'failed';
+    persisted.updatedAt = new Date().toISOString();
+    persisted.notes = exitCode === 0
+      ? 'Worker completed. Result requires lead-agent review.'
+      : `OpenCode exited with code ${exitCode}. Last output: ${transcript.slice(-500)}`;
+    return persisted;
+  });
+  console.log(`\n[${run.id}] ${persisted.status}; session ${persisted.sessionId ?? 'not reported'}; cost ${persisted.costUsd == null ? 'unavailable' : `$${persisted.costUsd.toFixed(6)}`}`);
   if (exitCode !== 0) process.exitCode = exitCode;
 }
 
 async function serve() {
-  const state = await readState();
+  await ledger.read();
   const repository = option('--repo');
   if (repository) {
-    state.repository = path.resolve(repository);
-    await saveState(state);
+    await ledger.mutateState((state) => { state.repository = path.resolve(repository); });
   }
   await startOpenCode();
   const server = createServer(async (request, response) => {
-    const fresh = await readState();
+    const fresh = await ledger.read();
     const health = await openCodeHealth(openCodeUrl);
     if (request.url === '/api/status') {
       response.writeHead(200, { 'content-type': 'application/json' });
@@ -153,17 +156,20 @@ async function record() {
   if (!title || !role || !model || !['researcher', 'builder', 'reviewer', 'qa'].includes(role)) {
     usage(); process.exitCode = 1; return;
   }
-  const state = await readState();
   const now = new Date().toISOString();
-  const run: WorkerRun = {
-    id: `run_${crypto.randomUUID().slice(0, 8)}`,
-    title, role, model,
-    repository: option('--repo') ? path.resolve(option('--repo')!) : state.repository ?? process.cwd(),
-    status: (option('--status') as WorkerRun['status']) ?? 'needs-review',
-    costUsd: option('--cost') ? Number(option('--cost')) : undefined,
-    createdAt: now, updatedAt: now,
-  };
-  state.runs.unshift(run); await saveState(state); console.log(JSON.stringify(run, null, 2));
+  const run = await ledger.mutateState((state) => {
+    const run: WorkerRun = {
+      id: `run_${crypto.randomUUID().slice(0, 8)}`,
+      title, role, model,
+      repository: option('--repo') ? path.resolve(option('--repo')!) : state.repository ?? process.cwd(),
+      status: (option('--status') as WorkerRun['status']) ?? 'needs-review',
+      costUsd: option('--cost') ? Number(option('--cost')) : undefined,
+      createdAt: now, updatedAt: now,
+    };
+    state.runs.unshift(run);
+    return run;
+  });
+  console.log(JSON.stringify(run, null, 2));
 }
 
 if (command === 'serve') await serve();
