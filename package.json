@@ -1,5 +1,5 @@
 {
-  "name": "switchboard",
+  "name": "agentrelay",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -8,7 +8,7 @@
     "dev": "node --experimental-strip-types src/cli.ts serve",
     "start": "node --experimental-strip-types src/cli.ts serve",
     "check": "node --experimental-strip-types src/cli.ts check",
-    "switchboard": "node --experimental-strip-types src/cli.ts",
+    "agentrelay": "node --experimental-strip-types src/cli.ts",
     "test": "node --experimental-strip-types --test test/*.test.ts"
   }
 }

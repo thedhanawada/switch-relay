@@ -1,6 +1,6 @@
-# Switchboard
+# AgentRelay
 
-Local control plane for coding workers. Switchboard keeps an OpenCode server available, records the worker sessions it creates, and gives a lead agent one place to inspect status, cost, diffs and verification.
+Local control plane for delegating coding work across models. AgentRelay keeps an OpenCode server available, records the worker sessions it creates, and gives a lead agent one place to inspect status, cost, diffs and verification.
 
 ## First customer workflow
 
@@ -13,7 +13,7 @@ Then open `http://127.0.0.1:4180`.
 Terminal-first delegation:
 
 ```bash
-npm run switchboard -- run \
+npm run agentrelay -- run \
   --repo /path/to/repository \
   --title "Review the CLI" \
   --role researcher \
@@ -21,7 +21,7 @@ npm run switchboard -- run \
   --prompt "Inspect the CLI and return one evidence-based improvement. Do not edit files."
 ```
 
-Switchboard starts only on localhost. It does not hold provider credentials; OpenCode keeps using its existing provider configuration. A future worker run receives its own Git worktree before it is allowed to edit code.
+AgentRelay starts only on localhost. It does not hold provider credentials; OpenCode keeps using its existing provider configuration. Existing local installations continue reading `.switchboard/state.json`; new installations use `.agentrelay/state.json`.
 
 ## Deliberate v0.1 boundary
 

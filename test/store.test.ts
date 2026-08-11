@@ -12,7 +12,7 @@ import type { WorkerRun } from '../src/types.ts';
 const execFileAsync = promisify(execFile);
 const helperFile = fileURLToPath(new URL('./helpers/add-run.ts', import.meta.url));
 
-const tempDirectory = () => mkdtemp(path.join(os.tmpdir(), 'switchboard-test-'));
+const tempDirectory = () => mkdtemp(path.join(os.tmpdir(), 'agentrelay-test-'));
 
 const sampleRun = (id: string): WorkerRun => ({
   id,
