@@ -1,14 +1,44 @@
 {
   "name": "agentrelay",
   "version": "0.1.0",
-  "private": true,
+  "description": "Delegate coding work across models while keeping each run visible and reviewable.",
   "type": "module",
-  "engines": { "node": ">=22" },
+  "license": "MIT",
+  "author": "Nirmala Rao Dhanawada",
+  "homepage": "https://github.com/thedhanawada/agentrelay#readme",
+  "bugs": "https://github.com/thedhanawada/agentrelay/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thedhanawada/agentrelay.git"
+  },
+  "keywords": [
+    "ai-agents",
+    "coding-agents",
+    "opencode",
+    "orchestration",
+    "cli"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "agentrelay": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
+    "build": "esbuild src/cli.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/cli.js --banner:js=\"#!/usr/bin/env node\"",
     "dev": "node --experimental-strip-types src/cli.ts serve",
     "start": "node --experimental-strip-types src/cli.ts serve",
     "check": "node --experimental-strip-types src/cli.ts check",
     "agentrelay": "node --experimental-strip-types src/cli.ts",
-    "test": "node --experimental-strip-types --test test/*.test.ts"
+    "test": "node --experimental-strip-types --test test/*.test.ts",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
   }
 }
