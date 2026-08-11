@@ -1,5 +1,5 @@
 {
-  "name": "agentrelay",
+  "name": "@ndhanawada/agentrelay",
   "version": "0.1.0",
   "description": "Delegate coding work across models while keeping each run visible and reviewable.",
   "type": "module",

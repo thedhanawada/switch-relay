@@ -10,7 +10,7 @@ Delegate coding work to different AI models through OpenCode. AgentRelay keeps e
 ## Install
 
 ```bash
-npm install --global agentrelay
+npm install --global @ndhanawada/agentrelay
 agentrelay check
 ```
 
