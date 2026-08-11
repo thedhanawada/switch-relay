@@ -1,0 +1,12 @@
+{
+  "name": "switchboard",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "node --experimental-strip-types src/cli.ts serve",
+    "start": "node --experimental-strip-types src/cli.ts serve",
+    "check": "node --experimental-strip-types src/cli.ts check"
+  }
+}
