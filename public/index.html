@@ -3,67 +3,111 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>switch-relay — spend tokens where they matter</title>
+<meta name="description" content="switch-relay: a local CLI that delegates coding tasks to per-task models through OpenCode, with a run and cost ledger.">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<title>switch-relay — delegate coding work across models</title>
 <style>
-  :root{--ink:#142b3d;--muted:#5f7180;--line:#d8e1e6;--bg:#f5f8f9;--panel:#fff;--brand:#075d67;--accent:#b45309}
+  :root{
+    --bg:#ffffff;--ink:#111827;--muted:#4b5563;--faint:#6b7280;
+    --line:#e5e7eb;--code-bg:#f3f4f6;--brand:#075d67;--brand-dim:#0a8f85;
+    --accent:#b45309;--warn:#a75d05;
+  }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,sans-serif;line-height:1.6}
-  .wrap{max-width:820px;margin:auto;padding:64px 24px}
-  h1{font-size:44px;letter-spacing:-.04em;margin:8px 0 4px}
-  .lede{font-size:20px;color:var(--muted);max-width:640px}
-  .eyebrow{text-transform:uppercase;letter-spacing:.1em;font-weight:750;color:var(--brand);font-size:12px}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.6}
+  .wrap{max-width:760px;margin:auto;padding:56px 22px 96px}
+  header{display:flex;align-items:center;gap:16px;margin-bottom:8px}
+  .logo{width:44px;height:44px;border-radius:10px}
+  h1{font-size:32px;margin:0;letter-spacing:-.02em;line-height:1.2}
+  .tag{color:var(--faint);font-size:15px;margin:2px 0 28px}
+  h2{font-size:20px;margin:44px 0 10px;letter-spacing:-.01em}
+  h2::before{content:"# ";color:var(--brand)}
   p{color:var(--muted)}
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px;margin:30px 0}
-  pre{background:#0f1c27;color:#d7e3ea;padding:16px;border-radius:8px;overflow:auto;font-size:14px}
-  pre .c{color:#7f95a6}
-  .diagram{font-family:ui-monospace,monospace;font-size:14px;line-height:1.5;white-space:pre;overflow:auto}
-  .accent{color:var(--accent)}
-  a{color:var(--brand)}
-  .foot{margin-top:60px;color:var(--muted);font-size:14px;border-top:1px solid var(--line);padding-top:20px}
-  .role{display:inline-block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:3px 9px;border-radius:99px;background:var(--bg);border:1px solid var(--line);margin:2px}
-  code{background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:.92em}
+  a{color:var(--brand);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{background:var(--code-bg);border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.88em}
+  pre{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.55}
+  pre .c{color:var(--faint)}
+  .diagram{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:18px;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.5;color:var(--ink)}
+  .diagram .p{color:var(--brand)}.diagram .c{color:var(--accent)}.diagram .d{color:var(--faint)}
+  ol li,ul li{margin:6px 0;color:var(--muted)}
+  table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}
+  th,td{text-align:left;padding:9px 12px;border:1px solid var(--line);vertical-align:top}
+  th{background:var(--code-bg);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint)}
+  td code{white-space:nowrap}
+  .note{border-left:3px solid var(--brand-dim);background:var(--code-bg);padding:10px 14px;border-radius:0 8px 8px 0;color:var(--muted);font-size:14px}
+  footer{margin-top:64px;border-top:1px solid var(--line);padding-top:18px;color:var(--faint);font-size:13px}
+  @media(max-width:520px){.wrap{padding:32px 18px 72px}h1{font-size:27px}}
 </style>
 </head>
 <body>
 <main class="wrap">
-  <div class="eyebrow">Local developer control plane</div>
-  <h1>switch-relay</h1>
-  <p class="lede">Spend your expensive tokens where they matter. Frontier models plan and review. Cheap workers do the bulk. Every run, cost and review status stays in a local ledger.</p>
 
-  <div class="panel">
-    <div class="diagram"><span class="accent">frontier model</span> (parent)  ── Claude · Codex · GPT
-        │  plans + reviews
-        │  assigns subtasks
-        ▼
-   <span class="role">child</span> worker           <span class="role">child</span> worker
-   DeepSeek / cheap model    whichever model fits the task</div>
-    <p style="margin:14px 0 0">You keep the models you already have. The parent decides what matters; children do the heavy lifting; the ledger tells you what each one cost.</p>
-  </div>
+<header><img class="logo" src="icon.svg" alt="" width="44" height="44"><h1>switch-relay</h1></header>
+<p class="tag">A local CLI that delegates coding work to per-task models and keeps every run, cost and review status in a ledger. Runs on your OpenCode setup. No cloud, no accounts, no telemetry.</p>
 
-  <h2>Install</h2>
-  <pre><span class="c"># needs Node.js 22+ and OpenCode with a provider configured</span>
+<h2>Purpose</h2>
+<p>Claude, Codex and GPT are expensive and not needed for every task. switch-relay lets one model act as the <strong>parent</strong> that plans and reviews, while it hands the bulk work to an arbitrary <strong>child</strong> model you pick per task — typically a cheaper one. Whatever runs is written to a local ledger so you can see what was done, what it cost, and what still needs a human review.</p>
+
+<h2>Model flow</h2>
+<div class="diagram"><span class="p">frontier model (parent)</span><span class="d">   — e.g. Claude / Codex / GPT</span>
+│  plans the work, reviews the result
+│  assigns each subtask to a child
+▼
+<span class="c">child worker</span>          <span class="c">child worker</span>
+<span class="d">any model — picked per task</span>  <span class="d">(e.g. a cheap model)</span>
+        │                      │
+        ▼                      ▼
+   result ──────────────────→ ledger: status · cost · parent → child
+                             (a human or the parent reviews)</div>
+
+<p>Each child is spawned with its own <code>--model</code>, so the orchestration is model-agnostic: a task can go to whichever model is cheapest that's good enough for it.</p>
+
+<h2>How it runs</h2>
+<ol>
+  <li><code>switchrelay run</code> starts (or attaches to) an OpenCode server and spawns a worker for one task.</li>
+  <li>The worker runs on the model you specify, under the <code>--role</code> you choose (read-only or edits the repo).</li>
+  <li>On exit, the run is written to the ledger with status, session id and cost; completed workers are marked <code>needs-review</code>.</li>
+  <li><code>switchrelay serve</code> serves a dashboard at <code>http://127.0.0.1:4180</code> to review health and the run ledger.</li>
+</ol>
+<p class="note">switch-relay never merges, pushes or deploys work on its own. That stays with the parent model or with you.</p>
+
+<h2>Install</h2>
+<pre><span class="c"># Node.js 22+ and OpenCode with a provider configured</span>
 npm install --global switch-relay
 switchrelay check</pre>
 
-  <h2>Delegate a task</h2>
-  <pre>switchrelay run \
+<h2>Delegate a task</h2>
+<pre>switchrelay run \
   --repo /path/to/repository \
   --title "Add error handling to the API client" \
   --role builder \
   --model openrouter/deepseek/deepseek-v4-flash-0731 \
   --parent openrouter/anthropic/claude-... \
-  --prompt "Add try/catch around every fetch call."</pre>
+  --prompt "Add try/catch around every fetch call. Touch nothing else."</pre>
+<p>Use <code>--role researcher</code> when the worker should investigate and report without editing files, or <code>builder</code> when it should edit the repo.</p>
 
-  <p>Completed workers are recorded as <code>needs-review</code>. switch-relay never
-  merges, pushes or deploys on its own — that stays with the parent, or you.</p>
+<h2>Reference</h2>
+<table>
+  <thead><tr><th>Command</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td><code>check</code></td><td>Reports OpenCode connectivity and version.</td></tr>
+    <tr><td><code>run</code></td><td>Runs one worker, then records it in the ledger. Flags: <code>--title</code>, <code>--prompt</code>, <code>--role</code>, <code>--model</code>, <code>--parent</code>, <code>--parent-run</code>, <code>--repo</code>, <code>--state-dir</code>.</td></tr>
+    <tr><td><code>record</code></td><td>Manually adds a run to the ledger (e.g. work done outside the tool). Flags: <code>--title</code>, <code>--role</code>, <code>--model</code>, <code>--parent</code>, <code>--status</code>, <code>--cost</code>, <code>--repo</code>.</td></tr>
+    <tr><td><code>serve</code></td><td>Serves the dashboard and health endpoint. Flags: <code>--repo</code>, <code>--port</code> (default 4180), <code>--opencode-port</code> (default 4096), <code>--state-dir</code>.</td></tr>
+  </tbody>
+</table>
 
-  <h2>Watch it</h2>
-  <p><code>switchrelay serve</code> opens a local dashboard at
-  <code>http://127.0.0.1:4180</code> showing health and the run ledger.</p>
+<h2>State</h2>
+<p>The ledger lives in <code>~/.switchrelay/state.json</code> (override with <code>--state-dir</code> or <code>SWITCHRELAY_STATE_DIR</code>). Writes are atomic and single-writer locked, safe under concurrent processes.</p>
 
-  <p>No cloud. No accounts. No telemetry.</p>
+<h2>Scope</h2>
+<p>This is a thin dispatch + review ledger on top of OpenCode. It is not an IDE, a host, or a CI pipeline, and it will not deploy your code.</p>
 
-  <div class="foot">Full usage in the <a href="https://github.com/thedhanawada/switch-relay#readme">README</a> · MIT · by Nirmala Rao Dhanawada</div>
+<footer>
+  Source and full documentation: <a href="https://github.com/thedhanawada/switch-relay#readme">the README</a> · MIT · by Nirmala Rao Dhanawada
+</footer>
+
 </main>
 </body>
 </html>
