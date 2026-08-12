@@ -1,0 +1,4 @@
+interface:
+  display_name: "SwitchRelay"
+  short_description: "Dispatch and review AI coding workers"
+  default_prompt: "Use $switch-relay to delegate this focused coding task and bring back a reviewable result."

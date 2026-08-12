@@ -21,6 +21,18 @@ When it finishes, switch-relay records the worker's OpenCode session, cost, and 
 
 Use `--role researcher` for read-only investigation, or `--role builder` when the worker may edit the repository.
 
+## Use from Codex
+
+This repository includes a Codex skill at [`skills/switch-relay`](skills/switch-relay). It teaches Codex how to dispatch a focused worker, wait for it, and bring back a reviewable result without treating worker completion as approval.
+
+Install it for your user:
+
+    git clone https://github.com/thedhanawada/switch-relay.git /tmp/switch-relay-skill
+    mkdir -p ~/.codex/skills
+    cp -R /tmp/switch-relay-skill/skills/switch-relay ~/.codex/skills/
+
+Start a new Codex session, then ask: “Delegate a read-only review to a cheaper worker.”
+
 ## How it works
 
     lead model → plans and reviews
