@@ -20,7 +20,7 @@ const ledger = createLedger({ directory: option('--state-dir') });
 const execFileAsync = promisify(execFile);
 
 function usage() {
-  console.log(`SwitchRelay\n\nCommands:\n  serve [--repo <path>] [--port 4180] [--opencode-port 4096] [--state-dir <path>]\n  check [--opencode-port 4096]\n  run --title <title> --prompt <brief> --role <researcher|builder|reviewer|qa> --model <provider/model> [--repo <path>] [--state-dir <path>]\n  record --title <title> --role <researcher|builder|reviewer|qa> --model <provider/model> [--status needs-review] [--cost 0.01] [--repo <path>] [--state-dir <path>]`);
+  console.log(`SwitchRelay\n\nCommands:\n  serve [--repo <path>] [--port 4180] [--opencode-port 4096] [--state-dir <path>]\n  check [--opencode-port 4096]\n  run --title <title> --prompt <brief> --role <researcher|builder|reviewer|qa> --model <provider/model> [--parent <provider/model>] [--parent-run <runId>] [--repo <path>] [--state-dir <path>]\n  record --title <title> --role <researcher|builder|reviewer|qa> --model <provider/model> [--status needs-review] [--cost 0.01] [--parent <provider/model>] [--parent-run <runId>] [--repo <path>] [--state-dir <path>]`);
 }
 
 const openCodeExecutable = () =>
@@ -77,14 +77,18 @@ async function runWorker() {
   const now = new Date().toISOString();
   const { run, repository } = await ledger.mutateState((state) => {
     const repository = path.resolve(option('--repo') ?? state.repository ?? process.cwd());
+    const parent = option('--parent');
+    const parentRun = option('--parent-run');
     const run: WorkerRun = {
       id: `run_${crypto.randomUUID().slice(0, 8)}`,
       title, role, model, repository, status: 'running', createdAt: now, updatedAt: now,
+      ...(parent ? { parent } : {}),
+      ...(parentRun ? { parentRun } : {}),
     };
     state.runs.unshift(run);
     return { run, repository };
   });
-  console.log(`[${run.id}] ${role} started with ${model}`);
+  console.log(`[${run.id}] ${role} started with ${model}${run.parent ? ` under ${run.parent}` : ''}`);
 
   // OpenCode only accepts primary agents at the top level. `explore` is a
   // subagent, while `plan` provides the read-only primary role we need here.
@@ -165,6 +169,8 @@ async function record() {
       status: (option('--status') as WorkerRun['status']) ?? 'needs-review',
       costUsd: option('--cost') ? Number(option('--cost')) : undefined,
       createdAt: now, updatedAt: now,
+      ...(option('--parent') ? { parent: option('--parent')! } : {}),
+      ...(option('--parent-run') ? { parentRun: option('--parent-run')! } : {}),
     };
     state.runs.unshift(run);
     return run;

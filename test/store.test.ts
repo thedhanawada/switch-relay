@@ -120,6 +120,27 @@ test('a run with an unsupported role is rejected instead of trusted by type asse
   assert.equal(await readFile(stateFile, 'utf8'), JSON.stringify(malformed));
 });
 
+test('parent model fields persist through a write and round-trip on read', async () => {
+  const directory = await tempDirectory();
+  const ledger = createLedger({ directory });
+  await ledger.mutateState((state) => {
+    state.runs.unshift({ ...sampleRun('parented'), parent: 'anthropic/claude', parentRun: 'run_parent123' });
+  });
+  const parsed = JSON.parse(await readFile(path.join(directory, 'state.json'), 'utf8'));
+  assert.equal(parsed.runs[0].parent, 'anthropic/claude');
+  assert.equal(parsed.runs[0].parentRun, 'run_parent123');
+  assert.equal((await ledger.read()).runs[0].parent, 'anthropic/claude');
+});
+
+test('a run with a non-string parent is rejected instead of trusted', async () => {
+  const directory = await tempDirectory();
+  const stateFile = path.join(directory, 'state.json');
+  const malformed = { runs: [{ ...sampleRun('bad-parent'), parent: 42 }] };
+  await writeFile(stateFile, JSON.stringify(malformed), 'utf8');
+  await assert.rejects(createLedger({ directory }).read(), /runs\[0\]\.parent.*string/);
+  assert.equal(await readFile(stateFile, 'utf8'), JSON.stringify(malformed));
+});
+
 test('mutation refuses to proceed when a mutator throws, leaving state intact', async () => {
   const directory = await tempDirectory();
   const ledger = createLedger({ directory });

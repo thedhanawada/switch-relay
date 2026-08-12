@@ -1,0 +1,35 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "openrouter/deepseek/deepseek-v4-flash-0731",
+  "small_model": "openrouter/deepseek/deepseek-chat",
+  "snapshot": true,
+  "compaction": {
+    "auto": true,
+    "tail_turns": 15
+  },
+  "tool_output": {
+    "max_lines": 200,
+    "max_bytes": 8192
+  },
+  "permission": {
+    "edit": "allow",
+    "bash": {
+      "git status*": "allow",
+      "git diff*": "allow",
+      "git log*": "allow",
+      "git add*": "ask",
+      "git commit*": "ask",
+      "git push*": "ask",
+      "npm run build": "allow",
+      "npm run check": "allow",
+      "npm test": "allow",
+      "npm run test": "allow",
+      "*": "ask"
+    },
+    "external_directory": {
+      "*": "allow"
+    },
+    "webfetch": "allow"
+  },
+  "instructions": ["AGENTS.md"]
+}

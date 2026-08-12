@@ -6,6 +6,8 @@ export interface WorkerRun {
   role: 'researcher' | 'builder' | 'reviewer' | 'qa';
   model: string;
   repository: string;
+  parent?: string;
+  parentRun?: string;
   branch?: string;
   sessionId?: string;
   status: RunStatus;

@@ -71,7 +71,7 @@ export function createLedger(options: LedgerOptions = {}): StateLedger {
     if (run.costUsd !== undefined && run.costUsd !== null && (typeof run.costUsd !== 'number' || !Number.isFinite(run.costUsd))) {
       throw new Error(`runs[${index}].costUsd must be a finite number, got ${describe(run.costUsd)}`);
     }
-    for (const field of ['branch', 'sessionId', 'notes']) {
+    for (const field of ['branch', 'sessionId', 'notes', 'parent', 'parentRun']) {
       if (run[field] !== undefined && run[field] !== null && typeof run[field] !== 'string') {
         throw new Error(`runs[${index}].${field} must be a string, got ${describe(run[field])}`);
       }
@@ -80,6 +80,8 @@ export function createLedger(options: LedgerOptions = {}): StateLedger {
     const branch = typeof run.branch === 'string' ? run.branch : undefined;
     const sessionId = typeof run.sessionId === 'string' ? run.sessionId : undefined;
     const notes = typeof run.notes === 'string' ? run.notes : undefined;
+    const parent = typeof run.parent === 'string' ? run.parent : undefined;
+    const parentRun = typeof run.parentRun === 'string' ? run.parentRun : undefined;
     return {
       id: run.id as string,
       title: run.title as string,
@@ -89,6 +91,8 @@ export function createLedger(options: LedgerOptions = {}): StateLedger {
       status: run.status as WorkerRun['status'],
       createdAt: run.createdAt as string,
       updatedAt: run.updatedAt as string,
+      ...(parent !== undefined ? { parent } : {}),
+      ...(parentRun !== undefined ? { parentRun } : {}),
       ...(branch !== undefined ? { branch } : {}),
       ...(sessionId !== undefined ? { sessionId } : {}),
       ...(costUsd !== undefined ? { costUsd } : {}),

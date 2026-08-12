@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>switch-relay — spend tokens where they matter</title>
+<style>
+  :root{--ink:#142b3d;--muted:#5f7180;--line:#d8e1e6;--bg:#f5f8f9;--panel:#fff;--brand:#075d67;--accent:#b45309}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,sans-serif;line-height:1.6}
+  .wrap{max-width:820px;margin:auto;padding:64px 24px}
+  h1{font-size:44px;letter-spacing:-.04em;margin:8px 0 4px}
+  .lede{font-size:20px;color:var(--muted);max-width:640px}
+  .eyebrow{text-transform:uppercase;letter-spacing:.1em;font-weight:750;color:var(--brand);font-size:12px}
+  p{color:var(--muted)}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:22px;margin:30px 0}
+  pre{background:#0f1c27;color:#d7e3ea;padding:16px;border-radius:8px;overflow:auto;font-size:14px}
+  pre .c{color:#7f95a6}
+  .diagram{font-family:ui-monospace,monospace;font-size:14px;line-height:1.5;white-space:pre;overflow:auto}
+  .accent{color:var(--accent)}
+  a{color:var(--brand)}
+  .foot{margin-top:60px;color:var(--muted);font-size:14px;border-top:1px solid var(--line);padding-top:20px}
+  .role{display:inline-block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;padding:3px 9px;border-radius:99px;background:var(--bg);border:1px solid var(--line);margin:2px}
+  code{background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:.92em}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <div class="eyebrow">Local developer control plane</div>
+  <h1>switch-relay</h1>
+  <p class="lede">Spend your expensive tokens where they matter. Frontier models plan and review. Cheap workers do the bulk. Every run, cost and review status stays in a local ledger.</p>
+
+  <div class="panel">
+    <div class="diagram"><span class="accent">frontier model</span> (parent)  ── Claude · Codex · GPT
+        │  plans + reviews
+        │  assigns subtasks
+        ▼
+   <span class="role">child</span> worker           <span class="role">child</span> worker
+   DeepSeek / cheap model    whichever model fits the task</div>
+    <p style="margin:14px 0 0">You keep the models you already have. The parent decides what matters; children do the heavy lifting; the ledger tells you what each one cost.</p>
+  </div>
+
+  <h2>Install</h2>
+  <pre><span class="c"># needs Node.js 22+ and OpenCode with a provider configured</span>
+npm install --global switch-relay
+switchrelay check</pre>
+
+  <h2>Delegate a task</h2>
+  <pre>switchrelay run \
+  --repo /path/to/repository \
+  --title "Add error handling to the API client" \
+  --role builder \
+  --model openrouter/deepseek/deepseek-v4-flash-0731 \
+  --parent openrouter/anthropic/claude-... \
+  --prompt "Add try/catch around every fetch call."</pre>
+
+  <p>Completed workers are recorded as <code>needs-review</code>. switch-relay never
+  merges, pushes or deploys on its own — that stays with the parent, or you.</p>
+
+  <h2>Watch it</h2>
+  <p><code>switchrelay serve</code> opens a local dashboard at
+  <code>http://127.0.0.1:4180</code> showing health and the run ledger.</p>
+
+  <p>No cloud. No accounts. No telemetry.</p>
+
+  <div class="foot">Full usage in the <a href="https://github.com/thedhanawada/switch-relay#readme">README</a> · MIT · by Nirmala Rao Dhanawada</div>
+</main>
+</body>
+</html>
