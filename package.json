@@ -1,6 +1,6 @@
 {
   "name": "switch-relay",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Delegate coding work across models while keeping each run visible and reviewable.",
   "type": "module",
   "license": "MIT",

@@ -1,14 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="switch-relay icon">
-  <rect width="256" height="256" rx="56" fill="#0f1c27"/>
-  <g fill="none" stroke="#5f7180" stroke-width="14" stroke-linecap="round">
-    <line x1="128" y1="92" x2="86" y2="174"/>
-    <line x1="128" y1="92" x2="170" y2="174"/>
-  </g>
-  <circle cx="128" cy="60" r="32" fill="#075d67"/>
-  <circle cx="128" cy="60" r="32" fill="none" stroke="#0a8f85" stroke-width="4"/>
-  <circle cx="128" cy="60" r="12" fill="#e8b545"/>
-  <circle cx="74" cy="194" r="22" fill="#14406b"/>
-  <circle cx="182" cy="194" r="22" fill="#14406b"/>
-  <circle cx="74" cy="194" r="9" fill="#3b82c4"/>
-  <circle cx="182" cy="194" r="9" fill="#3b82c4"/>
+  <rect width="256" height="256" rx="56" fill="#0b1620"/>
+  <path d="M78 171 120 96m16 0 42 75" fill="none" stroke="#4b6475" stroke-width="14" stroke-linecap="round"/>
+  <path d="m67 153 11 18 19-4M189 153l-11 18-19-4" fill="none" stroke="#50d0bd" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="128" cy="66" r="36" fill="#075d67" stroke="#39bda9" stroke-width="4"/>
+  <path d="m111 66 11 11 23-25" fill="none" stroke="#fff4cf" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="74" cy="190" r="25" fill="#163f63" stroke="#5aa6e8" stroke-width="4"/>
+  <circle cx="182" cy="190" r="25" fill="#163f63" stroke="#5aa6e8" stroke-width="4"/>
+  <path d="M67 190h14m27 0h14m27 0h14" stroke="#d9f7f1" stroke-width="7" stroke-linecap="round"/>
 </svg>
