@@ -1,113 +1,16 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="switch-relay: a local CLI that delegates coding tasks to per-task models through OpenCode, with a run and cost ledger.">
-<link rel="icon" type="image/svg+xml" href="icon.svg">
-<title>switch-relay — delegate coding work across models</title>
-<style>
-  :root{
-    --bg:#ffffff;--ink:#111827;--muted:#4b5563;--faint:#6b7280;
-    --line:#e5e7eb;--code-bg:#f3f4f6;--brand:#075d67;--brand-dim:#0a8f85;
-    --accent:#b45309;--warn:#a75d05;
-  }
-  *{box-sizing:border-box}
-  html{scroll-behavior:smooth}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.6}
-  .wrap{max-width:760px;margin:auto;padding:56px 22px 96px}
-  header{display:flex;align-items:center;gap:16px;margin-bottom:8px}
-  .logo{width:44px;height:44px;border-radius:10px}
-  h1{font-size:32px;margin:0;letter-spacing:-.02em;line-height:1.2}
-  .tag{color:var(--faint);font-size:15px;margin:2px 0 28px}
-  h2{font-size:20px;margin:44px 0 10px;letter-spacing:-.01em}
-  h2::before{content:"# ";color:var(--brand)}
-  p{color:var(--muted)}
-  a{color:var(--brand);text-decoration:none}
-  a:hover{text-decoration:underline}
-  code{background:var(--code-bg);border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.88em}
-  pre{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.55}
-  pre .c{color:var(--faint)}
-  .diagram{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:18px;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.5;color:var(--ink)}
-  .diagram .p{color:var(--brand)}.diagram .c{color:var(--accent)}.diagram .d{color:var(--faint)}
-  ol li,ul li{margin:6px 0;color:var(--muted)}
-  table{width:100%;border-collapse:collapse;margin-top:14px;font-size:14px}
-  th,td{text-align:left;padding:9px 12px;border:1px solid var(--line);vertical-align:top}
-  th{background:var(--code-bg);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint)}
-  td code{white-space:nowrap}
-  .note{border-left:3px solid var(--brand-dim);background:var(--code-bg);padding:10px 14px;border-radius:0 8px 8px 0;color:var(--muted);font-size:14px}
-  footer{margin-top:64px;border-top:1px solid var(--line);padding-top:18px;color:var(--faint);font-size:13px}
-  @media(max-width:520px){.wrap{padding:32px 18px 72px}h1{font-size:27px}}
-</style>
-</head>
-<body>
-<main class="wrap">
-
-<header><img class="logo" src="icon.svg" alt="" width="44" height="44"><h1>switch-relay</h1></header>
-<p class="tag">A local CLI that delegates coding work to per-task models and keeps every run, cost and review status in a ledger. Runs on your OpenCode setup. No cloud, no accounts, no telemetry.</p>
-
-<h2>Purpose</h2>
-<p>Claude, Codex and GPT are expensive and not needed for every task. switch-relay lets one model act as the <strong>parent</strong> that plans and reviews, while it hands the bulk work to an arbitrary <strong>child</strong> model you pick per task — typically a cheaper one. Whatever runs is written to a local ledger so you can see what was done, what it cost, and what still needs a human review.</p>
-
-<h2>Model flow</h2>
-<div class="diagram"><span class="p">frontier model (parent)</span><span class="d">   — e.g. Claude / Codex / GPT</span>
-│  plans the work, reviews the result
-│  assigns each subtask to a child
-▼
-<span class="c">child worker</span>          <span class="c">child worker</span>
-<span class="d">any model — picked per task</span>  <span class="d">(e.g. a cheap model)</span>
-        │                      │
-        ▼                      ▼
-   result ──────────────────→ ledger: status · cost · parent → child
-                             (a human or the parent reviews)</div>
-
-<p>Each child is spawned with its own <code>--model</code>, so the orchestration is model-agnostic: a task can go to whichever model is cheapest that's good enough for it.</p>
-
-<h2>How it runs</h2>
-<ol>
-  <li><code>switchrelay run</code> starts (or attaches to) an OpenCode server and spawns a worker for one task.</li>
-  <li>The worker runs on the model you specify, under the <code>--role</code> you choose (read-only or edits the repo).</li>
-  <li>On exit, the run is written to the ledger with status, session id and cost; completed workers are marked <code>needs-review</code>.</li>
-  <li><code>switchrelay serve</code> serves a dashboard at <code>http://127.0.0.1:4180</code> to review health and the run ledger.</li>
-</ol>
-<p class="note">switch-relay never merges, pushes or deploys work on its own. That stays with the parent model or with you.</p>
-
-<h2>Install</h2>
-<pre><span class="c"># Node.js 22+ and OpenCode with a provider configured</span>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="A local OpenCode dispatch and review ledger for multi-model coding work."><link rel="icon" href="icon.svg" type="image/svg+xml"><title>switch-relay — run the right model for every job</title><style>
+:root{--night:#08151d;--ink:#102730;--muted:#5e7179;--mint:#5fe0c6;--teal:#087b79;--line:#dce7e9;--paper:#f7fbfb;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--paper);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,sans-serif;line-height:1.5}.shell{width:min(1160px,calc(100% - 48px));margin:auto}.hero-wrap{background:radial-gradient(circle at 78% 15%,#17616b 0,transparent 28%),radial-gradient(circle at 12% 80%,#0d4f5a 0,transparent 30%),var(--night);color:white}.nav{height:80px;display:flex;align-items:center;justify-content:space-between}.brand{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;font-weight:760;font-size:18px;letter-spacing:-.03em}.brand img{width:35px;height:35px}.nav-links{display:flex;gap:23px;align-items:center}.nav-links a{font-size:14px;color:#c6d9dc;text-decoration:none}.nav-links a:hover{color:#fff}.git{border:1px solid #40616a;border-radius:8px;padding:8px 12px;color:#fff!important}.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;padding:68px 0 88px}.eyebrow{font:700 12px var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--mint)}h1{font-size:clamp(45px,5.6vw,72px);line-height:.97;letter-spacing:-.067em;margin:18px 0 22px;max-width:680px}.lead{font-size:19px;line-height:1.55;color:#c8d8dc;max-width:570px;margin:0 0 30px}.buttons{display:flex;gap:12px;flex-wrap:wrap}.button{display:inline-block;border-radius:9px;padding:12px 17px;text-decoration:none;font-weight:740;font-size:14px}.primary{background:var(--mint);color:#092923}.secondary{border:1px solid #4b6870;color:#fff}.terminal{background:#071116;border:1px solid #2d5661;border-radius:14px;box-shadow:0 26px 55px #0008;overflow:hidden;font:13px/1.65 var(--mono);transform:rotate(1.5deg)}.terminal header{padding:11px 15px;background:#112730;border-bottom:1px solid #29444c;color:#9cb4ba;font-size:11px}.terminal main{padding:21px}.dots{color:#5e7780;letter-spacing:3px}.mint{color:var(--mint)}.out{color:#a9bec3;margin:12px 0}.result{border-top:1px solid #203941;margin-top:12px;padding-top:12px;display:flex;justify-content:space-between;color:#b8cace}.result b{color:#f0ca69;font-weight:600}.proof{background:#0a1b22;border-bottom:1px solid #26434c;color:#b8cbd0}.proof .shell{display:flex}.proof div div{padding:18px 22px 18px 0;font-size:13px}.proof div div+div{padding-left:22px;border-left:1px solid #2a464e}.proof b{color:#fff}.tick{color:var(--mint);font-weight:900}.section{padding:104px 0}.intro{max-width:660px;margin-bottom:42px}.section h2{font-size:clamp(31px,4vw,49px);letter-spacing:-.058em;line-height:1.04;margin:12px 0}.section p{font-size:17px;color:var(--muted);margin:0}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:26px;min-height:232px}.card span{font:700 13px var(--mono);color:var(--teal)}.card h3{font-size:20px;letter-spacing:-.03em;margin:30px 0 9px}.card p{font-size:16px}.dark{background:#0d2029;color:#fff}.dark p{color:#bdd0d4}.ledger{display:grid;grid-template-columns:.85fr 1.15fr;gap:70px;align-items:center}.bullets{list-style:none;padding:0;margin:28px 0 0}.bullets li{display:flex;gap:12px;padding:13px 0;border-top:1px solid #2b4951;color:#d2e0e2}.bullets b{color:var(--mint);font-family:var(--mono)}.flow{padding:28px;border:1px solid #2c4d56;border-radius:14px;background:#09171e}.flow-row{display:flex;align-items:center;gap:16px}.node{flex:1;padding:13px 8px;text-align:center;border-radius:9px;font:700 12px var(--mono)}.lead-node{background:#16515a;color:#aefff0}.worker{background:#173c60;color:#b2dcff}.local{background:#59491a;color:#ffe49b}.arrow{height:2px;flex:1;background:#55727a}.flow-label{text-align:center;color:#89a4ab;font:11px var(--mono);margin:9px}.quick{display:grid;grid-template-columns:.8fr 1.2fr;gap:66px;align-items:start}.code{border-radius:14px;overflow:hidden;background:#102730;color:#d7e5e8;box-shadow:0 14px 28px #0b1e2426}.code header{padding:14px 18px;background:#19343d;color:#acc5ca;font:12px var(--mono)}pre{margin:0;padding:23px;overflow:auto;font:13px/1.75 var(--mono)}.comment{color:#74959c}.flag{color:var(--mint)}.string{color:#f3d889}.safe{margin-top:28px;padding:21px;border:1px solid #bce8dd;border-radius:14px;background:#e5f7f3;color:#245852}.safe b{display:block;margin-bottom:4px}.footer{padding:38px 0;background:#061116;color:#9bb4ba}.footer-row{display:flex;align-items:center;justify-content:space-between}.footer a{color:#d3e8e8;text-decoration:none;font-size:14px}.footer-links{display:flex;gap:20px}.footer small{display:block;margin-top:21px;color:#638087}@media(max-width:800px){.nav-links a:not(.git){display:none}.hero,.ledger,.quick{grid-template-columns:1fr;gap:38px}.hero{padding:45px 0 66px}.terminal{transform:none;max-width:600px}.cards{grid-template-columns:1fr}.section{padding:75px 0}}@media(max-width:520px){.shell{width:min(100% - 36px,1160px)}h1{font-size:44px}.proof .shell{display:block}.proof div div,.proof div div+div{padding:11px 0;border:0}.flow-row{display:block}.arrow{width:2px;height:20px;margin:8px auto}.footer-row{align-items:flex-start;flex-direction:column;gap:20px}.footer-links{flex-wrap:wrap}}
+</style></head><body>
+<div class="hero-wrap"><nav class="nav shell"><a class="brand" href="#top"><img src="icon.svg" alt=""><span>switch-relay</span></a><div class="nav-links"><a href="#how">How it works</a><a href="#quickstart">Quickstart</a><a href="https://www.npmjs.com/package/switch-relay">npm</a><a class="git" href="https://github.com/thedhanawada/switch-relay">GitHub ↗</a></div></nav><main id="top" class="hero shell"><div><div class="eyebrow">Local multi-model control plane</div><h1>Run the right model for every job.</h1><p class="lead">Dispatch coding work through OpenCode, use frontier models for judgment, and keep every worker run, cost and review decision in one local ledger.</p><div class="buttons"><a class="button primary" href="#quickstart">Get started →</a><a class="button secondary" href="https://github.com/thedhanawada/switch-relay#readme">Read the docs</a></div></div><div class="terminal"><header><span class="dots">● ● ●</span> &nbsp;switchrelay — project-api</header><main><div><span class="mint">$</span> switchrelay run --role builder</div><div class="out">[run_4ac72f19] builder started with<br>openrouter/deepseek-v4 under openai/codex</div><div><span class="mint">✓</span> Worker completed. Result requires review.</div><div class="result"><span>session <b>ses_…7rK2</b></span><span>cost <b>$0.0041</b></span></div></main></div></main></div>
+<div class="proof"><div class="shell"><div><span class="tick">✓</span> <b>Local by default</b> — no telemetry</div><div><span class="tick">✓</span> <b>Model agnostic</b> — choose per task</div><div><span class="tick">✓</span> <b>Review first</b> — never auto-merges</div></div></div>
+<section id="how" class="section shell"><div class="intro"><div class="eyebrow">Deliberate delegation</div><h2>Less overhead. More signal.</h2><p>Keep the expensive model in the loop where it matters: planning the task and reviewing the result. Let a fit-for-purpose worker do the execution.</p></div><div class="cards"><article class="card"><span>01 / PLAN</span><h3>Lead with judgment</h3><p>Your frontier model defines the task, constraints and review bar. It remains accountable for the outcome.</p></article><article class="card"><span>02 / DISPATCH</span><h3>Pick a worker</h3><p>Send each task to the provider and model that makes sense for its difficulty, risk and budget.</p></article><article class="card"><span>03 / REVIEW</span><h3>Keep the evidence</h3><p>SwitchRelay records the session, cost, status and parent relationship so every result stays reviewable.</p></article></div></section>
+<section class="section dark"><div class="shell ledger"><div><div class="eyebrow">One honest ledger</div><h2>See what happened, not just what shipped.</h2><p>A local state file retains a clear account of who did the work, what model ran, what it cost, and whether someone has reviewed it.</p><ul class="bullets"><li><b>→</b>Session ID and cost captured automatically</li><li><b>→</b>Parent model and parent run linked to every child</li><li><b>→</b>Atomic writes and exclusive locks for reliable local state</li></ul></div><div class="flow"><div class="flow-row"><div class="node lead-node">FRONTIER<br>LEAD</div><div class="arrow"></div><div class="node worker">TASK<br>WORKER</div></div><div class="flow-label">plans &amp; dispatches &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; executes</div><div class="flow-row"><div class="node local">LOCAL LEDGER<br><small>run · cost · session · status</small></div><div class="node lead-node">HUMAN / LEAD REVIEW</div></div></div></div></section>
+<section id="quickstart" class="section shell"><div class="quick"><div><div class="eyebrow">Quickstart</div><h2>From zero to a tracked worker in two commands.</h2><p>Bring Node.js 22+ and an authenticated OpenCode provider. Everything else stays on your machine.</p><div class="safe"><b>Your repository stays yours.</b>SwitchRelay is not a CI system and never merges, pushes, or deploys for you.</div></div><div class="code"><header>terminal</header><pre><span class="comment"># Install the local control plane</span>
 npm install --global switch-relay
-switchrelay check</pre>
+switchrelay check
 
-<h2>Delegate a task</h2>
-<pre>switchrelay run \
-  --repo /path/to/repository \
-  --title "Add error handling to the API client" \
-  --role builder \
-  --model openrouter/deepseek/deepseek-v4-flash-0731 \
-  --parent openrouter/anthropic/claude-... \
-  --prompt "Add try/catch around every fetch call. Touch nothing else."</pre>
-<p>Use <code>--role researcher</code> when the worker should investigate and report without editing files, or <code>builder</code> when it should edit the repo.</p>
-
-<h2>Reference</h2>
-<table>
-  <thead><tr><th>Command</th><th>Notes</th></tr></thead>
-  <tbody>
-    <tr><td><code>check</code></td><td>Reports OpenCode connectivity and version.</td></tr>
-    <tr><td><code>run</code></td><td>Runs one worker, then records it in the ledger. Flags: <code>--title</code>, <code>--prompt</code>, <code>--role</code>, <code>--model</code>, <code>--parent</code>, <code>--parent-run</code>, <code>--repo</code>, <code>--state-dir</code>.</td></tr>
-    <tr><td><code>record</code></td><td>Manually adds a run to the ledger (e.g. work done outside the tool). Flags: <code>--title</code>, <code>--role</code>, <code>--model</code>, <code>--parent</code>, <code>--status</code>, <code>--cost</code>, <code>--repo</code>.</td></tr>
-    <tr><td><code>serve</code></td><td>Serves the dashboard and health endpoint. Flags: <code>--repo</code>, <code>--port</code> (default 4180), <code>--opencode-port</code> (default 4096), <code>--state-dir</code>.</td></tr>
-  </tbody>
-</table>
-
-<h2>State</h2>
-<p>The ledger lives in <code>~/.switchrelay/state.json</code> (override with <code>--state-dir</code> or <code>SWITCHRELAY_STATE_DIR</code>). Writes are atomic and single-writer locked, safe under concurrent processes.</p>
-
-<h2>Scope</h2>
-<p>This is a thin dispatch + review ledger on top of OpenCode. It is not an IDE, a host, or a CI pipeline, and it will not deploy your code.</p>
-
-<footer>
-  Source and full documentation: <a href="https://github.com/thedhanawada/switch-relay#readme">the README</a> · MIT · by Nirmala Rao Dhanawada
-</footer>
-
-</main>
-</body>
-</html>
+<span class="comment"># Dispatch one focused task</span>
+switchrelay run --repo /path/to/repository --title <span class="string">"Handle API fetch errors"</span> --role builder --model openrouter/deepseek/deepseek-v4 --parent openai/codex --prompt <span class="string">"Add focused error handling."</span></pre></div></div></section>
+<footer class="footer"><div class="shell"><div class="footer-row"><a class="brand" href="#top"><img src="icon.svg" alt=""><span>switch-relay</span></a><div class="footer-links"><a href="https://www.npmjs.com/package/switch-relay">npm</a><a href="https://github.com/thedhanawada/switch-relay">GitHub</a><a href="https://github.com/thedhanawada/switch-relay#readme">Documentation</a></div></div><small>MIT licensed · Built for deliberate AI-assisted software work.</small></div></footer>
+</body></html>

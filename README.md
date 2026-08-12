@@ -1,85 +1,59 @@
 # switch-relay
 
-Spend your expensive tokens where they matter.
+**Use the right AI model for each coding task — and keep a clear record of what happened.**
 
-Give the **frontier models** (Claude, Codex, GPT) the work that needs them. Hand the
-rest to a **cheaper worker model** (DeepSeek, or whatever fits the task). switch-relay
-keeps every run, session, cost and review status in a local ledger, so you can see what
-ran, what it cost, and what still needs a human look.
+switch-relay is a local CLI for dispatching work through [OpenCode](https://opencode.ai). Your lead model plans and reviews; a worker model completes one focused task. switch-relay records the model, parent, session, cost, and review status in a local ledger.
 
-No cloud. No accounts. No telemetry. Just a CLI that talks to your existing OpenCode setup
-and a local dashboard to watch what happened.
-
-## The idea
-
-```text
-       ┌──────────────────┐
-       │   Frontier model  │   plans it, reviews it    (Claude / Codex)
-       │   (the parent)    │
-       └────────┬─────────┘
-                │ assigns subtasks
-        ┌───────┴────────┐
-        ▼                ▼
-   ┌──────────┐    ┌──────────┐     each child can be a
-   │  DeepSeek │    │  cheap /  │     different model —
-   │  (child)  │    │ fit model │     you pick per task
-   └──────────┘    └──────────┘
-```
-
-You keep using the models you already have. The parent decides and reviews. Children do
-the bulk work. The ledger tells you what each one cost.
-
-## Requirements
-
-- Node.js 22 or newer
-- OpenCode with at least one provider configured
+No cloud service. No telemetry. No automatic merging or deployment.
 
 ## Install
 
-```bash
-npm install --global switch-relay
-switchrelay check
-```
+You need Node.js 22+ and an authenticated OpenCode setup.
 
-## Delegate a task
+    npm install --global switch-relay
+    switchrelay check
 
-Run a worker on a model of your choice. Tell it which parent model dispatched the task so
-the ledger stays honest about who oversaw what:
+## Run a worker
 
-```bash
-switchrelay run \
-  --repo /path/to/repository \
-  --title "Add error handling to the API client" \
-  --role builder \
-  --model openrouter/deepseek/deepseek-v4-flash-0731 \
-  --parent openrouter/anthropic/claude-... \
-  --prompt "Add try/catch around every fetch call. Do not touch anything else."
-```
+    switchrelay run --repo /path/to/repository --title "Add API error handling" --role builder --model openrouter/deepseek/deepseek-v4-flash-0731 --parent openai/codex --prompt "Add focused try/catch handling around fetch calls. Do not change anything else."
 
-Use `--role researcher` when the worker should only investigate and report back (no file
-edits), or `--role builder` when it should edit the repo. switch-relay records completed
-workers as `needs-review` and never merges, pushes or deploys their work — that stays with
-the parent.
+When it finishes, switch-relay records the worker's OpenCode session, cost, and result. Successful work is marked `needs-review` — it is never merged automatically.
+
+Use `--role researcher` for read-only investigation, or `--role builder` when the worker may edit the repository.
+
+## How it works
+
+    lead model → plans and reviews
+         │
+         └→ worker model → completes one focused task
+                              │
+                              └→ local ledger → session · cost · status · review
+
+You pick the worker model for every task. Use a frontier model for high-judgment work and a cheaper, capable worker for execution.
 
 ## Commands
 
-```text
-switchrelay check
-switchrelay run   --title <title> --prompt <brief> --role <role> --model <provider/model>
-                  [--parent <provider/model>] [--parent-run <runId>]
-switchrelay record --title <title> --role <role> --model <provider/model>
-                  [--parent <provider/model>] [--status needs-review] [--cost 0.01]
-switchrelay serve --repo /path/to/repository
-```
+| Command | What it does |
+| --- | --- |
+| `switchrelay check` | Checks whether OpenCode is reachable. |
+| `switchrelay run` | Runs one worker and records the outcome. |
+| `switchrelay record` | Adds work performed outside switch-relay to the ledger. |
+| `switchrelay serve` | Opens a local review dashboard at `http://127.0.0.1:4180`. |
 
-`serve` opens the dashboard at `http://127.0.0.1:4180` to review health and the run ledger.
+Run `switchrelay` with no command to see all options.
 
-## What it is (and isn't)
+## Local state
 
-- **Is:** a local dispatch + review ledger on top of OpenCode.
-- **Isn't:** an IDE, a host, an orchestration framework, or a wire into your CI.
-- **Won't:** merge, push, or deploy on its own. A human (or the parent) reviews first.
+The ledger is stored in `~/.switchrelay/state.json`. Override it with `--state-dir` or `SWITCHRELAY_STATE_DIR`. Writes are atomic and protected by an exclusive lock, so concurrent runs stay intact.
 
-## Licence
+## What it does not do
+
+switch-relay is a small dispatch and review ledger, not an IDE, CI system, hosting platform, or autonomous deployer. You keep control of the repository and the final review decision.
+
+## Links
+
+- [Website](https://thedhanawada.github.io/switch-relay/)
+- [npm package](https://www.npmjs.com/package/switch-relay)
+- [OpenCode](https://opencode.ai)
 
 MIT
